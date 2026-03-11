@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WhatsApp QR — EverIA</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d1117;
+      --card: #161b22;
+      --border: #30363d;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --green: #3fb950;
+      --yellow: #d29922;
+      --red: #f85149;
+      --accent: #58a6ff;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 32px;
+    }
+    .logo-icon { font-size: 28px; }
+    .logo-brand { font-size: 20px; font-weight: 700; }
+    .logo-sub { font-size: 13px; color: var(--muted); }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 36px;
+      width: 100%;
+      max-width: 400px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .card-title {
+      font-size: 18px;
+      font-weight: 600;
+      text-align: center;
+    }
+    .card-sub {
+      font-size: 13px;
+      color: var(--muted);
+      text-align: center;
+      margin-top: -16px;
+    }
+
+    /* QR area */
+    .qr-wrap {
+      width: 240px;
+      height: 240px;
+      background: #fff;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    #qrImg {
+      width: 220px;
+      height: 220px;
+      object-fit: contain;
+      display: none;
+    }
+
+    .qr-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      color: #888;
+    }
+    .qr-placeholder-icon { font-size: 48px; }
+    .qr-placeholder p { font-size: 12px; text-align: center; padding: 0 16px; }
+
+    /* Status badge */
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--muted);
+    }
+    .status.waiting .status-dot { background: var(--yellow); animation: pulse 1.5s infinite; }
+    .status.ready   .status-dot { background: var(--green); }
+    .status.expired .status-dot { background: var(--red); }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.3; }
+    }
+
+    /* Timer */
+    .timer-wrap { width: 100%; }
+    .timer-track {
+      width: 100%;
+      height: 4px;
+      background: var(--border);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .timer-bar {
+      height: 100%;
+      width: 100%;
+      background: var(--green);
+      border-radius: 99px;
+      transition: width 1s linear, background 0.3s;
+    }
+    .timer-bar.urgent   { background: var(--yellow); }
+    .timer-bar.critical { background: var(--red); }
+    .timer-label {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 6px;
+      text-align: center;
+    }
+
+    /* Instructions */
+    .instructions {
+      font-size: 12px;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.6;
+    }
+    .instructions strong { color: var(--text); }
+
+    /* Updated at */
+    .updated {
+      font-size: 11px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <div class="logo">
+    <div class="logo-icon">⚡</div>
+    <div>
+      <div class="logo-brand">EverIA</div>
+      <div class="logo-sub">WhatsApp Connect</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div>
+      <div class="card-title">Conectar WhatsApp</div>
+      <div class="card-sub" id="agentLabel">amanda-ga</div>
+    </div>
+
+    <div class="qr-wrap">
+      <div class="qr-placeholder" id="qrPlaceholder">
+        <div class="qr-placeholder-icon">📱</div>
+        <p>Aguardando QR Code…</p>
+      </div>
+      <img id="qrImg" alt="QR Code WhatsApp" />
+    </div>
+
+    <div class="status waiting" id="statusBadge">
+      <div class="status-dot"></div>
+      <span id="statusText">Aguardando QR…</span>
+    </div>
+
+    <div class="timer-wrap hidden" id="timerWrap">
+      <div class="timer-track">
+        <div class="timer-bar" id="timerBar"></div>
+      </div>
+      <div class="timer-label">Escaneie em <strong id="timerSecs">60</strong>s</div>
+    </div>
+
+    <div class="instructions">
+      Abra o WhatsApp → <strong>Configurações</strong><br>
+      → <strong>Aparelhos Conectados</strong> → <strong>Conectar aparelho</strong><br>
+      Aponte a câmera para o QR code acima
+    </div>
+
+    <div class="updated hidden" id="updatedAt"></div>
+  </div>
+
+  <script>
+    const QR_TTL = 60;
+    let countdownInterval = null;
+    let refreshInterval   = null;
+    let lastSha = null;
+
+    function showQr(src, ts) {
+      const img = document.getElementById('qrImg');
+      img.src = src + '?t=' + ts;
+      img.style.display = 'block';
+      document.getElementById('qrPlaceholder').classList.add('hidden');
+
+      setStatus('ready', 'QR pronto — escaneie agora!');
+      startCountdown();
+
+      const el = document.getElementById('updatedAt');
+      el.textContent = 'Atualizado: ' + new Date(ts).toLocaleTimeString('pt-BR');
+      el.classList.remove('hidden');
+    }
+
+    function setStatus(state, text) {
+      const badge = document.getElementById('statusBadge');
+      badge.className = 'status ' + state;
+      document.getElementById('statusText').textContent = text;
+    }
+
+    function startCountdown() {
+      if (countdownInterval) clearInterval(countdownInterval);
+      document.getElementById('timerWrap').classList.remove('hidden');
+
+      const bar  = document.getElementById('timerBar');
+      const secs = document.getElementById('timerSecs');
+      let remaining = QR_TTL;
+
+      bar.style.width = '100%';
+      bar.className = 'timer-bar';
+      secs.textContent = remaining;
+
+      countdownInterval = setInterval(() => {
+        remaining--;
+        const pct = (remaining / QR_TTL) * 100;
+        bar.style.width = pct + '%';
+        secs.textContent = remaining;
+
+        if (remaining <= 10) bar.className = 'timer-bar critical';
+        else if (remaining <= 20) bar.className = 'timer-bar urgent';
+
+        if (remaining <= 0) {
+          clearInterval(countdownInterval);
+          setStatus('expired', 'QR expirado — aguardando novo…');
+        }
+      }, 1000);
+    }
+
+    async function checkForNewQr() {
+      try {
+        // Check the meta.json to see if a new QR was pushed
+        const r = await fetch('meta.json?t=' + Date.now());
+        if (!r.ok) return;
+        const meta = await r.json();
+
+        if (meta.sha && meta.sha !== lastSha) {
+          lastSha = meta.sha;
+          showQr('qr.png', meta.generatedAt || Date.now());
+        }
+      } catch (e) {
+        // silent — meta.json not yet available
+      }
+    }
+
+    // Poll every 5 seconds for a new QR
+    checkForNewQr();
+    refreshInterval = setInterval(checkForNewQr, 5000);
+  </script>
+</body>
+</html>
